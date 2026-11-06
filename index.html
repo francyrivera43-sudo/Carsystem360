@@ -72,7 +72,15 @@
         input, .select-input { width: 100%; padding: 10px 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.95rem; background-color: white; }
         input:focus, .select-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); }
 
-        .stock-info { padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-align: center; }
+        .payment-options { display: flex; gap: 10px; margin-top: 5px; }
+        .payment-btn {
+            flex: 1; padding: 10px; border: 2px solid #ced4da; border-radius: 8px;
+            background: #fff; cursor: pointer; text-align: center; font-weight: 600;
+            font-size: 0.85rem; transition: all 0.2s;
+        }
+        .payment-btn.active { border-color: var(--primary); background-color: #e7f1ff; color: var(--primary); }
+
+        .stock-info { padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-top: 10px; }
         .stock-info.neutral { background-color: #e9ecef; color: #495057; }
         .stock-info.disponible { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
         .stock-info.agotado { background-color: #f8d7da; color: var(--danger); border: 1px solid #f5c2c7; }
@@ -198,6 +206,19 @@
                         <label for="cantidad">Cantidad:</label>
                         <input type="number" id="cantidad" value="1" min="1" required>
                     </div>
+
+                    <!-- NUEVO: Botones de Método de Pago -->
+                    <div class="form-group">
+                        <label>Método de Pago:</label>
+                        <div class="payment-options">
+                            <div class="payment-btn active" id="btnContado" onclick="seleccionarMetodo('Contado / Efectivo')">
+                                💵 Contado / Efectivo
+                            </div>
+                            <div class="payment-btn" id="btnTarjeta" onclick="seleccionarMetodo('Tarjeta de Crédito')">
+                                💳 Tarjeta de Crédito
+                            </div>
+                        </div>
+                    </div>
                     
                     <div id="stockBadge" class="stock-info neutral">Selecciona un repuesto para verificar stock</div>
 
@@ -219,6 +240,7 @@
                                 <th>Cliente</th>
                                 <th>Repuesto</th>
                                 <th>Cant.</th>
+                                <th>Pago</th>
                                 <th>Valor Total</th>
                                 <th>Estado</th>
                                 <th>Acción</th>
@@ -231,7 +253,7 @@
         </div>
     </main>
 
-    <!-- JavaScript Directo y Seguro -->
+    <!-- JavaScript Directo -->
     <script>
         const BASE_DATOS_INVENTARIO = [
             { id: "FA-101", nombre: "Filtro de Aceite sintético (Ref. FA-101)", categoria: "Filtros", precio: 18500, stock: 42 },
@@ -243,14 +265,29 @@
         ];
 
         let contadorId = 107;
+        let metodoPagoSeleccionado = "Contado / Efectivo";
+
         let listaCotizaciones = [
-            { id: 101, cliente: "Taller Mecánico El Chispas", repuesto: "Pastillas de Freno Delanteras Ceramic (Ref. PF-120)", cantidad: 2, precioUnitario: 98000, estado: "En Proceso" },
-            { id: 102, cliente: "Autoservicios del Valle", repuesto: "Filtro de Aire Motor (Ref. FA-205)", cantidad: 4, precioUnitario: 32000, estado: "Completado" },
-            { id: 103, cliente: "Lubricantes y Frenos Medellín", repuesto: "Filtro de Aceite sintético (Ref. FA-101)", cantidad: 5, precioUnitario: 18500, estado: "Registrado" }
+            { id: 101, cliente: "Taller Mecánico El Chispas", repuesto: "Pastillas de Freno Delanteras Ceramic (Ref. PF-120)", cantidad: 2, metodoPago: "Tarjeta de Crédito", precioUnitario: 98000, estado: "En Proceso" },
+            { id: 102, cliente: "Autoservicios del Valle", repuesto: "Filtro de Aire Motor (Ref. FA-205)", cantidad: 4, metodoPago: "Contado / Efectivo", precioUnitario: 32000, estado: "Completado" },
+            { id: 103, cliente: "Lubricantes y Frenos Medellín", repuesto: "Filtro de Aceite sintético (Ref. FA-101)", cantidad: 5, metodoPago: "Contado / Efectivo", precioUnitario: 18500, estado: "Registrado" }
         ];
 
         function formatearMoneda(monto) {
             return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(monto);
+        }
+
+        function seleccionarMetodo(tipo) {
+            metodoPagoSeleccionado = tipo;
+            const btnC = document.getElementById('btnContado');
+            const btnT = document.getElementById('btnTarjeta');
+            if (tipo === 'Contado / Efectivo') {
+                btnC.classList.add('active');
+                btnT.classList.remove('active');
+            } else {
+                btnT.classList.add('active');
+                btnC.classList.remove('active');
+            }
         }
 
         function renderTablaInventario() {
@@ -328,7 +365,7 @@
             if (!tbody) return;
             tbody.innerHTML = '';
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #6c757d; padding: 20px;">No se encontraron registros</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #6c757d; padding: 20px;">No se encontraron registros</td></tr>`;
                 actualizarKPIs(lista);
                 return;
             }
@@ -341,6 +378,7 @@
                     <td><strong>${item.cliente}</strong></td>
                     <td>${item.repuesto}</td>
                     <td>${item.cantidad}</td>
+                    <td><small>${item.metodoPago}</small></td>
                     <td><strong>${formatearMoneda(item.cantidad * item.precioUnitario)}</strong></td>
                     <td><span class="badge ${claseBadge}">${item.estado}</span></td>
                     <td><button class="btn-action" onclick="avanzarEstado(${item.id})">Avanzar</button></td>
@@ -360,7 +398,6 @@
             }
         };
 
-        // Ejecutar inmediatamente al cargar el script
         window.onload = function() {
             renderTablaInventario();
             cargarOpcionesSelect();
@@ -399,14 +436,16 @@
                         cliente,
                         repuesto: selectedOption.value,
                         cantidad,
+                        metodoPago: metodoPagoSeleccionado,
                         precioUnitario: parseInt(selectedOption.getAttribute('data-precio') || 0),
                         estado: "Registrado"
                     });
 
                     renderTablaCotizaciones(listaCotizaciones);
                     form.reset();
+                    seleccionarMetodo('Contado / Efectivo');
                     verificarStock();
-                    alert('¡Cotización registrada con éxito y validada contra la Base de Datos!');
+                    alert('¡Cotización registrada con éxito!');
                 });
             }
         };
